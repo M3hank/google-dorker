@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline Google Dorker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --page-overlay: linear-gradient(180deg, rgba(15, 118, 110, 0.10), transparent 330px);
+      --header-bg: rgba(255, 255, 255, 0.72);
+      --panel: #ffffff;
+      --panel-soft: #f9fafb;
+      --input-bg: #ffffff;
+      --query-bg: #f8fafc;
+      --pill-bg: rgba(255, 255, 255, 0.76);
+      --ink: #15191f;
+      --muted: #5f6875;
+      --line: #d7dce3;
+      --line-strong: #b8c0cc;
+      --accent: #0f766e;
+      --accent-dark: #0b5f59;
+      --accent-ink: #ffffff;
+      --amber: #b45309;
+      --notice-bg: #fff7ed;
+      --notice-ink: #50350d;
+      --red: #b42318;
+      --violet: #6d28d9;
+      --tag-bg: #ccfbf1;
+      --tag-ink: #12312f;
+      --scope-bg: #e8edf5;
+      --scope-ink: #263142;
+      --toast-bg: #ecfdf5;
+      --toast-ink: #0f3b36;
+      --toast-error-bg: #fef3f2;
+      --toast-error-ink: #631f19;
+      --shadow: 0 18px 42px rgba(23, 31, 44, 0.10);
+      --radius: 8px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --page-overlay: linear-gradient(180deg, rgba(45, 212, 191, 0.12), rgba(37, 99, 235, 0.05) 360px, transparent 520px);
+      --header-bg: rgba(18, 25, 35, 0.74);
+      --panel: #151b24;
+      --panel-soft: #1b2430;
+      --input-bg: #0f1621;
+      --query-bg: #101722;
+      --pill-bg: rgba(21, 27, 36, 0.82);
+      --ink: #eef3f8;
+      --muted: #a6b2c1;
+      --line: #293545;
+      --line-strong: #45566b;
+      --accent: #2dd4bf;
+      --accent-dark: #5eead4;
+      --accent-ink: #042f2e;
+      --amber: #f59e0b;
+      --notice-bg: #2a2114;
+      --notice-ink: #f8d39a;
+      --red: #f87171;
+      --violet: #a78bfa;
+      --tag-bg: #123b37;
+      --tag-ink: #a7f3d0;
+      --scope-bg: #243244;
+      --scope-ink: #c8d4e2;
+      --toast-bg: #102b27;
+      --toast-ink: #b9fff4;
+      --toast-error-bg: #351817;
+      --toast-error-ink: #fecaca;
+      --shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.45;
+      letter-spacing: 0;
+      background: var(--page-overlay), var(--bg);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    button,
+    input,
+    select {
+      transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid rgba(15, 118, 110, 0.22);
+      outline-offset: 2px;
+    }
+
+    .app {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--header-bg);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius);
+      color: #fff;
+      background: linear-gradient(135deg, #0f766e, #2563eb 58%, #b45309);
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      font-weight: 750;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 260px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--pill-bg);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .pill strong {
+      margin-right: 4px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink);
+      background: var(--pill-bg);
+      font-size: 13px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--line-strong);
+      background: var(--panel-soft);
+    }
+
+    .theme-toggle svg {
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      position: sticky;
+      top: 16px;
+      overflow: hidden;
+    }
+
+    .control-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .control-section:last-child {
+      border-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 7px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .target-input {
+      width: 100%;
+      height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--input-bg);
+      outline: none;
+    }
+
+    .target-input:focus,
+    .filter-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+    }
+
+    .target-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 30px;
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .target-meta code {
+      overflow: hidden;
+      max-width: 190px;
+      color: var(--accent-dark);
+      font-family: var(--mono);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .notice {
+      margin: 10px 0 0;
+      padding: 10px 11px;
+      border-left: 4px solid var(--amber);
+      border-radius: 6px;
+      color: var(--notice-ink);
+      background: var(--notice-bg);
+      font-size: 13px;
+    }
+
+    .filter-input {
+      width: 100%;
+      height: 40px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--input-bg);
+      outline: none;
+    }
+
+    .chip-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      min-height: 36px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--input-bg);
+      text-align: left;
+    }
+
+    .chip:hover,
+    .chip.active {
+      border-color: rgba(15, 118, 110, 0.55);
+      background: var(--panel-soft);
+    }
+
+    .chip span:first-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .chip-count {
+      flex: 0 0 auto;
+      min-width: 28px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--scope-bg);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 38px;
+      padding: 8px 11px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      color: var(--accent-ink);
+      background: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      border-color: var(--line);
+      color: var(--ink);
+      background: var(--input-bg);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--line-strong);
+      background: var(--panel-soft);
+      transform: translateY(-1px);
+    }
+
+    .btn-small {
+      min-width: 82px;
+      min-height: 34px;
+      padding: 7px 9px;
+      font-size: 13px;
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 12px 14px;
+    }
+
+    .toolbar-title {
+      min-width: 0;
+    }
+
+    .toolbar-title h2 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .toolbar-title p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sort-select {
+      height: 38px;
+      padding: 7px 30px 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--input-bg);
+    }
+
+    .dork-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dork-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 210px) minmax(0, 1fr) auto;
+      gap: 13px;
+      align-items: stretch;
+      padding: 12px;
+    }
+
+    .tag-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .category-tag,
+    .scope-tag {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      max-width: 100%;
+      min-height: 28px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: var(--tag-ink);
+      background: var(--tag-bg);
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .scope-tag {
+      color: var(--scope-ink);
+      background: var(--scope-bg);
+      font-weight: 750;
+    }
+
+    .dork-title {
+      margin: 8px 0 0;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .dork-purpose {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .query-box {
+      display: flex;
+      align-items: center;
+      min-height: 76px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--query-bg);
+      min-width: 0;
+    }
+
+    .query-box code {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .row-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      align-content: center;
+      gap: 7px;
+      min-width: 90px;
+    }
+
+    .empty {
+      display: none;
+      padding: 36px 20px;
+      text-align: center;
+    }
+
+    .empty h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .empty p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 11px 13px;
+      border: 1px solid rgba(15, 118, 110, 0.25);
+      border-radius: var(--radius);
+      color: var(--toast-ink);
+      background: var(--toast-bg);
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .toast.error {
+      border-color: rgba(180, 35, 24, 0.25);
+      color: var(--toast-error-ink);
+      background: var(--toast-error-bg);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .status-strip {
+        justify-content: flex-start;
+        min-width: 0;
+      }
+
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+
+      .chip-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .brand h1 {
+        font-size: 21px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .sort-select {
+        width: 100%;
+      }
+
+      .dork-row {
+        grid-template-columns: 1fr;
+      }
+
+      .query-box {
+        min-height: 0;
+      }
+
+      .row-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        padding: 10px;
+      }
+
+      .chip-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status-strip {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+
+      .pill,
+      .theme-toggle {
+        justify-content: center;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M10.7 17.8a7.1 7.1 0 1 1 5.1-2.1l4.2 4.2-1.8 1.8-4.2-4.2a7 7 0 0 1-3.3.8Z" fill="currentColor"></path>
+            <path d="M7.7 10.4h6.5M7.7 13.1h4.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>Offline Google Dorker</h1>
+          <p>Authorized recon query launcher</p>
+        </div>
+      </div>
+      <div class="status-strip" aria-live="polite">
+        <span class="pill"><strong id="visibleCount">0</strong> visible</span>
+        <span class="pill"><strong id="totalCount">0</strong> templates</span>
+        <span class="pill"><strong id="targetState">No target</strong></span>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" title="Toggle dark mode">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3v2.2M12 18.8V21M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M3 12h2.2M18.8 12H21M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2"></circle>
+          </svg>
+          <span id="themeLabel">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="shell">
+      <aside class="panel controls">
+        <section class="control-section">
+          <label for="targetInput">Target domain</label>
+          <input id="targetInput" class="target-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="example.com">
+          <div class="target-meta">
+            <span>Normalized</span>
+            <code id="normalizedTarget">target.tld</code>
+          </div>
+          <p class="notice">Use only on domains you own or are explicitly permitted to test.</p>
+        </section>
+
+        <section class="control-section">
+          <label for="textFilter">Filter dorks</label>
+          <input id="textFilter" class="filter-input" type="search" autocomplete="off" spellcheck="false" placeholder="swagger, github, xlsx, redirect">
+          <div id="categoryChips" class="chip-grid" aria-label="Dork categories"></div>
+        </section>
+
+        <section class="control-section">
+          <div class="actions">
+            <button id="copyVisibleBtn" class="btn btn-primary" type="button" title="Copy every visible query">
+              <span aria-hidden="true">⧉</span>
+              <span>Copy Visible</span>
+            </button>
+            <button id="downloadVisibleBtn" class="btn btn-secondary" type="button" title="Download every visible query as a text file">
+              <span aria-hidden="true">↓</span>
+              <span>Download TXT</span>
+            </button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="content">
+        <div class="panel toolbar">
+          <div class="toolbar-title">
+            <h2 id="activeHeading">All dorks</h2>
+            <p id="activeSummary">Practical indexed-content queries for authorized security review.</p>
+          </div>
+          <label class="sr-only" for="sortSelect">Sort dorks</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="category">Sort by category</option>
+            <option value="title">Sort by title</option>
+          </select>
+        </div>
+
+        <div id="dorkList" class="dork-list"></div>
+
+        <div id="emptyState" class="panel empty">
+          <h3>No dorks match</h3>
+          <p>Clear the filter or choose another category.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const categories = [
+      { id: "highsignal", name: "Hunter picks", summary: "High-signal queries worth running early in an authorized recon pass." },
+      { id: "external", name: "External mentions", summary: "Public third-party pages that mention the target domain, code, docs, leaks, and cloud clues." },
+      { id: "tech", name: "Tech & versions", summary: "Framework, CMS, build, version, dependency, and service fingerprint clues." },
+      { id: "identities", name: "Emails & users", summary: "Indexed emails, usernames, staff references, and identity-related files." },
+      { id: "documents", name: "Documents & files", summary: "Indexed documents, spreadsheets, exports, logs, and text files." },
+      { id: "backups", name: "Backups & archives", summary: "Archive formats, backup naming patterns, old copies, and dumps." },
+      { id: "configs", name: "Config & secrets", summary: "Public configuration, environment, credential-like, and key-like files." },
+      { id: "source", name: "Source exposure", summary: "Repository traces, source files, build files, and package metadata." },
+      { id: "directories", name: "Directory listings", summary: "Index pages and browsable file listings." },
+      { id: "apis", name: "APIs & endpoints", summary: "API docs, schema explorers, GraphQL, Swagger, and OpenAPI surfaces." },
+      { id: "admin", name: "Admin & auth", summary: "Login panels, dashboards, staging paths, and identity flows." },
+      { id: "cloud", name: "Cloud & storage", summary: "Bucket references, CDN paths, storage URLs, and infrastructure clues." },
+      { id: "errors", name: "Errors & debug", summary: "Stack traces, debug pages, database errors, and verbose runtime output." },
+      { id: "parameters", name: "Parameters", summary: "URLs with common testing parameters for redirects, files, IDs, and callbacks." }
+    ];
+
+    const dorks = [
+      { c: "highsignal", t: "Exposed .env and app secrets", p: "Run early for environment files and common secret labels.", q: "(inurl:.env OR filetype:env) (DB_PASSWORD OR APP_KEY OR SECRET_KEY OR API_KEY OR TOKEN)" },
+      { c: "highsignal", t: "Secret indicators", p: "Find pages or files with high-risk credential indicators.", q: "(\"AKIA\" OR \"AIza\" OR \"ghp_\" OR \"xoxb-\" OR \"-----BEGIN PRIVATE KEY-----\" OR \"authorization: Bearer\")" },
+      { c: "highsignal", t: "Logs with credentials", p: "Find logs and text files that may contain tokens or passwords.", q: "(filetype:log OR filetype:txt) (\"Authorization:\" OR \"Bearer \" OR \"password=\" OR \"token=\" OR \"api_key=\")" },
+      { c: "highsignal", t: "Swagger and OpenAPI", p: "Find exposed API documentation and schemas.", q: "(intitle:\"Swagger UI\" OR inurl:swagger-ui OR inurl:swagger.json OR inurl:openapi.json OR inurl:api-docs)" },
+      { c: "highsignal", t: "GraphQL consoles", p: "Find GraphQL endpoints and developer consoles.", q: "(inurl:graphql OR intitle:GraphiQL OR intitle:\"GraphQL Playground\" OR \"query IntrospectionQuery\")" },
+      { c: "highsignal", t: "Git metadata", p: "Find exposed repository metadata and browsable Git folders.", q: "(inurl:.git OR intitle:\"index of\" \".git\")" },
+      { c: "highsignal", t: "Database dumps and backups", p: "Find backup archives and database dump style files.", q: "(backup OR dump OR database OR db) (filetype:sql OR filetype:zip OR filetype:gz OR filetype:bak OR filetype:7z)" },
+      { c: "highsignal", t: "Sensitive directory listings", p: "Find index listings containing configs, backups, keys, or dumps.", q: "intitle:\"index of\" (backup OR config OR dump OR private OR key OR sql)" },
+      { c: "highsignal", t: "Debug and exception pages", p: "Find verbose framework errors and debug output.", q: "(\"Werkzeug Debugger\" OR \"Django\" \"DEBUG\" OR \"Whoops\" OR \"Laravel\" \"APP_DEBUG\" OR \"Server Error in '/' Application\")" },
+      { c: "highsignal", t: "Admin on non-production", p: "Find admin/login panels on staging, test, UAT, or dev paths.", q: "(inurl:staging OR inurl:stage OR inurl:test OR inurl:dev OR inurl:qa OR inurl:uat) (login OR admin OR dashboard OR console)" },
+      { c: "highsignal", t: "Redirect parameters", p: "Find redirect-like parameters that often deserve manual review.", q: "(inurl:redirect= OR inurl:return= OR inurl:returnUrl= OR inurl:next= OR inurl:url= OR inurl:continue=)" },
+      { c: "highsignal", t: "SSRF-like parameters", p: "Find URL-fetching parameter names for authorized manual testing.", q: "(inurl:url= OR inurl:uri= OR inurl:target= OR inurl:proxy= OR inurl:fetch= OR inurl:webhook= OR inurl:feed=)" },
+      { c: "highsignal", t: "File and path parameters", p: "Find file, path, folder, and download parameter names.", q: "(inurl:file= OR inurl:path= OR inurl:folder= OR inurl:dir= OR inurl:download= OR inurl:template=)" },
+      { c: "highsignal", t: "Object ID parameters", p: "Find URLs with account, user, order, invoice, and customer identifiers.", q: "(inurl:user_id= OR inurl:account_id= OR inurl:customer_id= OR inurl:invoice_id= OR inurl:order_id=)" },
+      { c: "highsignal", t: "Upload and import surfaces", p: "Find upload, import, avatar, and attachment workflows.", q: "(inurl:upload OR inurl:fileupload OR inurl:import OR inurl:avatar OR inurl:attachment)" },
+
+      { c: "external", t: "GitHub secrets mention", p: "Search GitHub pages indexed by Google for target mentions and secret words.", q: "site:github.com (api_key OR apikey OR secret OR password OR token OR credentials)", scope: "mention" },
+      { c: "external", t: "GitHub config mention", p: "Search GitHub for target mentions near config filenames.", q: "site:github.com (\".env\" OR \"config.yml\" OR \"settings.py\" OR \"appsettings.json\" OR \"database.yml\")", scope: "mention" },
+      { c: "external", t: "GitHub package mention", p: "Search GitHub for target mentions in package metadata and lock files.", q: "site:github.com (\"package.json\" OR \"composer.json\" OR \"Gemfile\" OR \"requirements.txt\" OR \"pom.xml\")", scope: "mention" },
+      { c: "external", t: "GitLab secrets mention", p: "Search GitLab pages for target mentions and credential words.", q: "site:gitlab.com (api_key OR secret OR password OR token OR credentials)", scope: "mention" },
+      { c: "external", t: "Bitbucket secrets mention", p: "Search Bitbucket pages for target mentions and credential words.", q: "site:bitbucket.org (api_key OR secret OR password OR token OR credentials)", scope: "mention" },
+      { c: "external", t: "Gist mention", p: "Search GitHub Gists for target mentions and sensitive terms.", q: "site:gist.github.com (password OR token OR secret OR apikey OR config)", scope: "mention" },
+      { c: "external", t: "Paste sites mention", p: "Search paste-style pages for target mentions and sensitive terms.", q: "(site:pastebin.com OR site:paste.ee OR site:controlc.com) (password OR token OR secret OR apikey OR credential)", scope: "mention" },
+      { c: "external", t: "Public Trello boards", p: "Search public Trello boards for target mentions.", q: "site:trello.com (password OR token OR credential OR api OR login)", scope: "mention" },
+      { c: "external", t: "Public Atlassian pages", p: "Search indexed Jira and Confluence cloud pages for target mentions.", q: "site:atlassian.net (password OR token OR api OR login OR admin)", scope: "mention" },
+      { c: "external", t: "Public Notion docs", p: "Search public Notion pages for target references.", q: "(site:notion.site OR site:notion.so) (api OR password OR token OR onboarding OR runbook)", scope: "mention" },
+      { c: "external", t: "Google Docs references", p: "Search indexed Google Docs pages mentioning the target.", q: "site:docs.google.com (password OR token OR api OR internal OR confidential)", scope: "mention" },
+      { c: "external", t: "Cloud bucket references", p: "Find third-party pages mentioning the target with public bucket hosts.", q: "(\"s3.amazonaws.com\" OR \"storage.googleapis.com\" OR \"blob.core.windows.net\" OR \"digitaloceanspaces.com\")", scope: "mention" },
+      { c: "external", t: "Certificate transparency pages", p: "Search indexed certificate transparency pages for target references.", q: "site:crt.sh", scope: "mention" },
+      { c: "external", t: "Shodan indexed pages", p: "Find Shodan result pages mentioning the target domain.", q: "site:shodan.io", scope: "mention" },
+      { c: "external", t: "Censys indexed pages", p: "Find Censys pages mentioning the target domain.", q: "site:censys.io", scope: "mention" },
+      { c: "external", t: "Public reports and writeups", p: "Find public bug reports, writeups, and disclosures mentioning the target.", q: "(site:hackerone.com OR site:medium.com OR site:infosecwriteups.com OR site:huntr.com) (bug OR vulnerability OR disclosure OR writeup)", scope: "mention" },
+
+      { c: "tech", t: "Framework and powered-by clues", p: "Find pages revealing framework, platform, version, or build labels.", q: "(\"Powered by\" OR \"version\" OR \"build\" OR \"release\")" },
+      { c: "tech", t: "CMS fingerprints", p: "Find common CMS assets and paths.", q: "(inurl:wp-content OR inurl:wp-json OR inurl:sites/default OR inurl:administrator/index.php OR inurl:skin/frontend)" },
+      { c: "tech", t: "WordPress plugin paths", p: "Find WordPress plugin and theme asset paths.", q: "(inurl:wp-content/plugins OR inurl:wp-content/themes OR inurl:wp-includes)" },
+      { c: "tech", t: "Spring actuator", p: "Find Spring Boot actuator endpoints indexed by Google.", q: "(inurl:/actuator OR inurl:/actuator/health OR inurl:/actuator/env OR inurl:/actuator/metrics)" },
+      { c: "tech", t: "Prometheus metrics", p: "Find exposed metrics endpoints and Prometheus text output.", q: "(inurl:/metrics OR \"process_cpu_seconds_total\" OR \"go_gc_duration_seconds\" OR \"jvm_memory_used_bytes\")" },
+      { c: "tech", t: "Kibana and Elasticsearch", p: "Find indexed Elastic and Kibana surfaces.", q: "(intitle:Kibana OR inurl:kibana OR inurl:elasticsearch OR \"You Know, for Search\")" },
+      { c: "tech", t: "Grafana and dashboards", p: "Find indexed Grafana and dashboard surfaces.", q: "(intitle:Grafana OR inurl:grafana OR inurl:dashboard OR inurl:d/)" },
+      { c: "tech", t: "Jenkins and CI version clues", p: "Find CI/CD pages and version-bearing build systems.", q: "(intitle:Jenkins OR inurl:jenkins OR \"X-Jenkins\" OR intitle:TeamCity OR intitle:\"GitLab\")" },
+      { c: "tech", t: "Package manifests", p: "Find dependency manifests with potentially useful version data.", q: "(inurl:package.json OR inurl:composer.json OR inurl:requirements.txt OR inurl:pom.xml OR inurl:build.gradle OR inurl:go.mod)" },
+      { c: "tech", t: "Lock files", p: "Find lock files with dependency versions.", q: "(inurl:package-lock.json OR inurl:yarn.lock OR inurl:pnpm-lock.yaml OR inurl:composer.lock OR inurl:Gemfile.lock OR inurl:poetry.lock)" },
+      { c: "tech", t: "Changelog and release notes", p: "Find change logs and release notes that reveal versions or fixed bugs.", q: "(inurl:changelog OR intitle:changelog OR inurl:release-notes OR intitle:\"release notes\" OR inurl:releases)" },
+      { c: "tech", t: "Client config objects", p: "Find frontend configuration values useful for recon pivots.", q: "(\"client_id\" OR \"tenant_id\" OR \"firebaseConfig\" OR \"amplitude\" OR \"segment\" OR \"GTM-\")" },
+      { c: "tech", t: "WAF and gateway hints", p: "Find gateway, proxy, or WAF-specific labels.", q: "(\"Cloudflare Ray ID\" OR \"AkamaiGHost\" OR \"Fastly error\" OR \"nginx\" \"gateway\" OR \"openresty\")" },
+
+      { c: "identities", t: "Email addresses", p: "Find pages containing target-domain email addresses.", q: "\"@{target}\"", scope: "raw" },
+      { c: "identities", t: "Emails in files", p: "Find files that contain email addresses and user data labels.", q: "(filetype:txt OR filetype:csv OR filetype:xlsx OR filetype:log OR filetype:pdf) \"@{target}\"", scope: "raw" },
+      { c: "identities", t: "Username files", p: "Find files mentioning usernames, employees, or account identifiers.", q: "(filetype:txt OR filetype:csv OR filetype:xlsx OR filetype:log) (username OR user_id OR employee OR email)" },
+      { c: "identities", t: "Staff and internal docs", p: "Find internal-looking staff, onboarding, and runbook documents.", q: "(staff OR employee OR onboarding OR runbook OR handbook OR internal) (filetype:pdf OR filetype:docx OR filetype:xlsx)" },
+      { c: "identities", t: "Login procedure docs", p: "Find documents describing login, SSO, VPN, or onboarding procedures.", q: "(login OR sso OR vpn OR onboarding OR password) (filetype:pdf OR filetype:docx OR filetype:pptx)" },
+      { c: "identities", t: "LDAP and SSO terms", p: "Find identity-provider configuration terms.", q: "(LDAP OR SAML OR SSO OR Okta OR AzureAD OR \"Azure AD\" OR \"identity provider\")" },
+      { c: "identities", t: "Public LinkedIn mentions", p: "Search indexed LinkedIn profiles and company pages for target references.", q: "(site:linkedin.com/in OR site:linkedin.com/company)", scope: "mention" },
+      { c: "identities", t: "Recruiting and job tech stack", p: "Find job posts that reveal internal technologies.", q: "(site:greenhouse.io OR site:lever.co OR site:workdayjobs.com OR site:jobs.ashbyhq.com) (AWS OR Kubernetes OR GraphQL OR Okta OR Salesforce OR Snowflake)", scope: "mention" },
+
+      { c: "documents", t: "PDF documents", p: "Find indexed PDF files.", q: "filetype:pdf" },
+      { c: "documents", t: "Office documents", p: "Find Word, PowerPoint, and Excel files.", q: "(filetype:doc OR filetype:docx OR filetype:ppt OR filetype:pptx OR filetype:xls OR filetype:xlsx)" },
+      { c: "documents", t: "Spreadsheet exports", p: "Find CSV and spreadsheet data exports.", q: "(filetype:csv OR filetype:xls OR filetype:xlsx OR filetype:ods)" },
+      { c: "documents", t: "Text files", p: "Find plain text files.", q: "(filetype:txt OR filetype:text)" },
+      { c: "documents", t: "Log files", p: "Find indexed log files.", q: "(filetype:log OR ext:log)" },
+      { c: "documents", t: "Database exports", p: "Find database dump-style files.", q: "(filetype:sql OR filetype:db OR filetype:sqlite OR filetype:mdb)" },
+      { c: "documents", t: "XML and JSON data", p: "Find structured data files.", q: "(filetype:xml OR filetype:json)" },
+      { c: "documents", t: "YAML data", p: "Find YAML files.", q: "(filetype:yml OR filetype:yaml)" },
+      { c: "documents", t: "Email-like files", p: "Find mail exports and message files.", q: "(filetype:eml OR filetype:msg OR filetype:mbox)" },
+      { c: "documents", t: "Financial terms in files", p: "Find indexed files mentioning finance terms.", q: "(filetype:pdf OR filetype:xls OR filetype:xlsx OR filetype:csv) (invoice OR receipt OR payroll OR finance)" },
+      { c: "documents", t: "Internal terms in files", p: "Find files containing internal-facing labels.", q: "(filetype:pdf OR filetype:doc OR filetype:docx OR filetype:xls OR filetype:xlsx) (confidential OR internal OR private)" },
+      { c: "documents", t: "Export filenames", p: "Find files named like generated exports.", q: "(inurl:export OR inurl:exports OR inurl:download) (filetype:csv OR filetype:xlsx OR filetype:json OR filetype:xml)" },
+      { c: "documents", t: "Report filenames", p: "Find report-like indexed files.", q: "(inurl:report OR inurl:reports) (filetype:pdf OR filetype:xlsx OR filetype:csv)" },
+      { c: "documents", t: "Attachment paths", p: "Find uploaded attachment locations.", q: "(inurl:attachment OR inurl:attachments OR inurl:uploads) (filetype:pdf OR filetype:docx OR filetype:xlsx OR filetype:csv)" },
+
+      { c: "backups", t: "Zip archives", p: "Find ZIP archives.", q: "(filetype:zip OR ext:zip)" },
+      { c: "backups", t: "Tar archives", p: "Find tarball archive formats.", q: "(filetype:tar OR filetype:tgz OR filetype:tar.gz OR ext:tar OR ext:tgz)" },
+      { c: "backups", t: "Compressed archives", p: "Find compressed bundle files.", q: "(filetype:gz OR filetype:bz2 OR filetype:7z OR filetype:rar)" },
+      { c: "backups", t: "Backup extensions", p: "Find common backup file extensions.", q: "(filetype:bak OR filetype:backup OR ext:bak OR ext:old OR ext:orig)" },
+      { c: "backups", t: "Backup filenames", p: "Find URLs with backup naming.", q: "(inurl:backup OR inurl:backups OR inurl:bak OR inurl:old)" },
+      { c: "backups", t: "Site backup names", p: "Find archive filenames that look like site backups.", q: "(inurl:site-backup OR inurl:website-backup OR inurl:www-backup OR inurl:public_html)" },
+      { c: "backups", t: "Database dumps", p: "Find SQL dump naming patterns.", q: "(filetype:sql OR ext:sql) (dump OR backup OR database OR db)" },
+      { c: "backups", t: "Date-stamped backups", p: "Find backups with date-like names.", q: "(backup OR dump) (2023 OR 2024 OR 2025 OR 2026) (filetype:zip OR filetype:sql OR filetype:gz OR filetype:tar)" },
+      { c: "backups", t: "Old copies", p: "Find old or original file copies.", q: "(inurl:old OR inurl:copy OR inurl:archive OR inurl:previous) (filetype:zip OR filetype:bak OR filetype:sql OR filetype:gz)" },
+      { c: "backups", t: "Temporary files", p: "Find temporary or editor-created files.", q: "(ext:tmp OR ext:temp OR ext:swp OR ext:swo OR ext:save)" },
+      { c: "backups", t: "Tilde backups", p: "Find editor backup filenames.", q: "inurl:~ (filetype:php OR filetype:asp OR filetype:aspx OR filetype:jsp OR filetype:js OR filetype:conf)" },
+      { c: "backups", t: "Archive directory names", p: "Find archive storage directories.", q: "(intitle:\"index of\" OR inurl:archive OR inurl:archives) (zip OR tar OR gz OR bak OR sql)" },
+
+      { c: "configs", t: "Environment files", p: "Find exposed environment files.", q: "(filetype:env OR inurl:.env OR intitle:\".env\")" },
+      { c: "configs", t: "Config files", p: "Find generic configuration files.", q: "(filetype:conf OR filetype:config OR filetype:cfg OR filetype:ini)" },
+      { c: "configs", t: "YAML configuration", p: "Find YAML config files.", q: "(filetype:yml OR filetype:yaml) (config OR configuration OR settings)" },
+      { c: "configs", t: "JSON configuration", p: "Find JSON config files.", q: "filetype:json (config OR settings OR credentials OR secrets)" },
+      { c: "configs", t: "Properties files", p: "Find Java-style properties configuration.", q: "filetype:properties (password OR username OR jdbc OR token OR secret)" },
+      { c: "configs", t: "Credential words", p: "Find pages and files with credential-like labels.", q: "(password OR passwd OR pwd OR username OR credential OR credentials) (filetype:txt OR filetype:log OR filetype:csv OR filetype:json OR filetype:xml)" },
+      { c: "configs", t: "Token words", p: "Find indexed files with token-like labels.", q: "(api_key OR apikey OR api-key OR access_token OR auth_token OR bearer) (filetype:txt OR filetype:json OR filetype:env OR filetype:log)" },
+      { c: "configs", t: "Private key filenames", p: "Find private-key-like filenames.", q: "(filetype:key OR inurl:id_rsa OR inurl:private.key OR inurl:server.key)" },
+      { c: "configs", t: "Certificate files", p: "Find public certificate and keystore files.", q: "(filetype:pem OR filetype:crt OR filetype:cer OR filetype:jks OR filetype:p12)" },
+      { c: "configs", t: "NPM and package auth", p: "Find package manager auth/config files.", q: "(inurl:.npmrc OR inurl:.yarnrc OR inurl:.pypirc OR inurl:.netrc)" },
+      { c: "configs", t: "Docker configuration", p: "Find Docker and compose files.", q: "(filetype:dockerfile OR filename:Dockerfile OR inurl:docker-compose.yml OR inurl:docker-compose.yaml)" },
+      { c: "configs", t: "Kubernetes configuration", p: "Find Kubernetes manifests and kubeconfig hints.", q: "(filetype:yml OR filetype:yaml) (kind: OR apiVersion:) (secret OR configmap OR kubeconfig)" },
+      { c: "configs", t: "Terraform files", p: "Find Terraform configuration and state names.", q: "(filetype:tf OR filetype:tfvars OR inurl:terraform.tfstate)" },
+      { c: "configs", t: "Application settings", p: "Find framework app settings files.", q: "(inurl:appsettings.json OR inurl:settings.py OR inurl:config.php OR inurl:configuration.php)" },
+      { c: "configs", t: "Connection strings", p: "Find files mentioning connection strings.", q: "\"connectionString\" OR \"connection string\" OR \"jdbc:\" OR \"mongodb+srv\" OR \"postgres://\"" },
+
+      { c: "source", t: "Git metadata", p: "Find exposed Git metadata.", q: "(inurl:.git OR intitle:\"index of\" \".git\")" },
+      { c: "source", t: "SVN metadata", p: "Find exposed SVN metadata.", q: "(inurl:.svn OR intitle:\"index of\" \".svn\")" },
+      { c: "source", t: "Mercurial metadata", p: "Find exposed Mercurial metadata.", q: "(inurl:.hg OR intitle:\"index of\" \".hg\")" },
+      { c: "source", t: "Source maps", p: "Find JavaScript source maps.", q: "(filetype:map OR ext:map) (inurl:js OR inurl:static OR inurl:assets)" },
+      { c: "source", t: "JavaScript files", p: "Find indexed JavaScript files.", q: "(filetype:js OR ext:js) -inurl:jquery -inurl:bootstrap" },
+      { c: "source", t: "Frontend bundles", p: "Find bundled frontend assets.", q: "(inurl:bundle.js OR inurl:main.js OR inurl:app.js OR inurl:chunk.js)" },
+      { c: "source", t: "PHP source", p: "Find PHP files indexed by Google.", q: "(filetype:php OR ext:php) (inurl:config OR inurl:admin OR inurl:api OR inurl:include)" },
+      { c: "source", t: "ASP.NET source", p: "Find ASP.NET files indexed by Google.", q: "(filetype:aspx OR filetype:ashx OR filetype:asmx OR filetype:config)" },
+      { c: "source", t: "Java source and JSP", p: "Find Java and JSP files.", q: "(filetype:java OR filetype:jsp OR filetype:jspx)" },
+      { c: "source", t: "Python source", p: "Find Python source files.", q: "(filetype:py OR ext:py) (settings OR config OR app OR main)" },
+      { c: "source", t: "Ruby source", p: "Find Ruby and Rails files.", q: "(filetype:rb OR inurl:Gemfile OR inurl:database.yml)" },
+      { c: "source", t: "Node package metadata", p: "Find Node project metadata files.", q: "(inurl:package.json OR inurl:package-lock.json OR inurl:yarn.lock OR inurl:pnpm-lock.yaml)" },
+      { c: "source", t: "Composer metadata", p: "Find PHP Composer metadata.", q: "(inurl:composer.json OR inurl:composer.lock)" },
+      { c: "source", t: "Build metadata", p: "Find build and CI config files.", q: "(inurl:Jenkinsfile OR inurl:.github/workflows OR inurl:.gitlab-ci.yml OR inurl:circle.yml OR inurl:azure-pipelines.yml)" },
+      { c: "source", t: "Robots and sitemap", p: "Find crawler hints and indexed maps.", q: "(inurl:robots.txt OR inurl:sitemap.xml OR inurl:sitemap_index.xml)" },
+
+      { c: "directories", t: "Generic index listing", p: "Find generic directory listing pages.", q: "intitle:\"index of\"" },
+      { c: "directories", t: "Uploads index", p: "Find browsable upload directories.", q: "intitle:\"index of\" (uploads OR upload OR files OR assets)" },
+      { c: "directories", t: "Backup index", p: "Find browsable backup directories.", q: "intitle:\"index of\" (backup OR backups OR bak OR dump)" },
+      { c: "directories", t: "Logs index", p: "Find browsable log directories.", q: "intitle:\"index of\" (log OR logs)" },
+      { c: "directories", t: "Config index", p: "Find browsable config directories.", q: "intitle:\"index of\" (config OR conf OR settings)" },
+      { c: "directories", t: "Database index", p: "Find browsable database dump directories.", q: "intitle:\"index of\" (db OR database OR sql OR dump)" },
+      { c: "directories", t: "Private index", p: "Find private/internal-labeled listings.", q: "intitle:\"index of\" (private OR internal OR confidential)" },
+      { c: "directories", t: "Parent directory listings", p: "Find Apache-style listings.", q: "\"Parent Directory\" \"Last modified\" \"Size\"" },
+      { c: "directories", t: "Nginx autoindex", p: "Find Nginx-style autoindex pages.", q: "intitle:\"Index of\" \"Name\" \"Last modified\" \"Size\"" },
+      { c: "directories", t: "Directory with keys", p: "Find listings containing key-like files.", q: "intitle:\"index of\" (pem OR key OR crt OR p12 OR jks)" },
+      { c: "directories", t: "Directory with archives", p: "Find listings containing archives.", q: "intitle:\"index of\" (zip OR tar OR gz OR rar OR 7z)" },
+      { c: "directories", t: "Directory with source", p: "Find listings containing source files.", q: "intitle:\"index of\" (php OR js OR py OR java OR rb OR go)" },
+
+      { c: "apis", t: "Swagger UI", p: "Find Swagger UI pages.", q: "(intitle:\"Swagger UI\" OR inurl:swagger-ui OR inurl:swagger)" },
+      { c: "apis", t: "OpenAPI specs", p: "Find OpenAPI schema files.", q: "(inurl:openapi.json OR inurl:openapi.yaml OR inurl:swagger.json OR inurl:swagger.yaml)" },
+      { c: "apis", t: "API docs", p: "Find API documentation pages.", q: "(inurl:api-docs OR inurl:apidocs OR intitle:\"API Docs\" OR intitle:\"API Documentation\")" },
+      { c: "apis", t: "GraphQL", p: "Find GraphQL endpoints and consoles.", q: "(inurl:graphql OR intitle:GraphiQL OR intitle:\"GraphQL Playground\" OR inurl:graphiql)" },
+      { c: "apis", t: "REST docs", p: "Find REST API references.", q: "(intitle:\"REST API\" OR intitle:\"API Reference\" OR inurl:reference/api)" },
+      { c: "apis", t: "Postman collections", p: "Find Postman collection files.", q: "(filetype:json OR inurl:postman_collection) \"postman\" \"collection\"" },
+      { c: "apis", t: "WSDL files", p: "Find SOAP/WSDL endpoints.", q: "(filetype:wsdl OR inurl:?wsdl OR inurl:wsdl)" },
+      { c: "apis", t: "API version paths", p: "Find API versioned URL paths.", q: "(inurl:/api/v1 OR inurl:/api/v2 OR inurl:/api/v3 OR inurl:/v1/ OR inurl:/v2/)" },
+      { c: "apis", t: "Developer portals", p: "Find developer and integration portals.", q: "(inurl:developer OR inurl:developers OR inurl:integrations OR inurl:portal) (api OR sdk OR token)" },
+      { c: "apis", t: "Webhook docs", p: "Find webhook and callback documentation.", q: "(webhook OR webhooks OR callback) (inurl:docs OR intitle:docs OR inurl:api)" },
+      { c: "apis", t: "API keys in docs", p: "Find docs mentioning API keys.", q: "\"api key\" (inurl:docs OR inurl:api OR intitle:\"API\")" },
+      { c: "apis", t: "Endpoint lists", p: "Find pages listing endpoints.", q: "(\"endpoint\" OR \"endpoints\") (\"GET\" OR \"POST\" OR \"PUT\" OR \"DELETE\")" },
+
+      { c: "admin", t: "Admin paths", p: "Find admin-labeled paths.", q: "(inurl:admin OR inurl:administrator OR inurl:adminpanel OR inurl:admin-console)" },
+      { c: "admin", t: "Login pages", p: "Find login pages.", q: "(intitle:login OR inurl:login OR inurl:signin OR inurl:sign-in)" },
+      { c: "admin", t: "Dashboard pages", p: "Find dashboards and control panels.", q: "(inurl:dashboard OR intitle:dashboard OR inurl:console OR intitle:console)" },
+      { c: "admin", t: "SSO paths", p: "Find SSO and identity surfaces.", q: "(inurl:sso OR inurl:saml OR inurl:oauth OR inurl:openid OR inurl:oidc)" },
+      { c: "admin", t: "Password reset", p: "Find password reset flows.", q: "(inurl:reset-password OR inurl:forgot-password OR inurl:password-reset)" },
+      { c: "admin", t: "Registration flows", p: "Find signup and invite flows.", q: "(inurl:signup OR inurl:register OR inurl:invite OR inurl:onboarding)" },
+      { c: "admin", t: "Staging paths", p: "Find staging and test environments indexed under the target.", q: "(inurl:staging OR inurl:stage OR inurl:test OR inurl:dev OR inurl:qa OR inurl:uat)" },
+      { c: "admin", t: "Internal paths", p: "Find internal-labeled pages.", q: "(inurl:internal OR intitle:internal OR inurl:intranet OR intitle:intranet)" },
+      { c: "admin", t: "CMS admin", p: "Find common CMS admin paths.", q: "(inurl:wp-admin OR inurl:wp-login.php OR inurl:user/login OR inurl:admin/login)" },
+      { c: "admin", t: "Monitoring panels", p: "Find monitoring and status pages.", q: "(inurl:grafana OR inurl:kibana OR inurl:prometheus OR inurl:status OR intitle:status)" },
+      { c: "admin", t: "Jenkins and CI", p: "Find CI/CD panels.", q: "(intitle:Jenkins OR inurl:jenkins OR intitle:GitLab OR inurl:gitlab OR intitle:TeamCity)" },
+      { c: "admin", t: "Database admin tools", p: "Find web database admin surfaces.", q: "(inurl:phpmyadmin OR intitle:phpMyAdmin OR inurl:adminer OR intitle:Adminer)" },
+      { c: "admin", t: "Remote access panels", p: "Find remote access portal labels.", q: "(inurl:vpn OR inurl:remote OR inurl:rdweb OR intitle:\"remote access\")" },
+
+      { c: "cloud", t: "S3 references", p: "Find Amazon S3 bucket references.", q: "(\"s3.amazonaws.com\" OR \"amazonaws.com\")" },
+      { c: "cloud", t: "S3 website buckets", p: "Find S3 static website endpoints.", q: "(\"s3-website\" OR \"s3 website\")" },
+      { c: "cloud", t: "Google Cloud Storage", p: "Find GCS bucket references.", q: "(\"storage.googleapis.com\" OR \"googleapis.com/storage\" OR \"gs://\")" },
+      { c: "cloud", t: "Azure Blob Storage", p: "Find Azure Blob references.", q: "(\"blob.core.windows.net\" OR \"azurewebsites.net\" OR \"dfs.core.windows.net\")" },
+      { c: "cloud", t: "CloudFront", p: "Find CloudFront distribution references.", q: "(\"cloudfront.net\" OR inurl:cloudfront)" },
+      { c: "cloud", t: "DigitalOcean Spaces", p: "Find DigitalOcean Spaces references.", q: "\"digitaloceanspaces.com\"" },
+      { c: "cloud", t: "Firebase", p: "Find Firebase project references.", q: "(\"firebaseio.com\" OR \"firebaseapp.com\" OR \"firebasestorage.googleapis.com\")" },
+      { c: "cloud", t: "Heroku", p: "Find Heroku app references.", q: "\"herokuapp.com\"" },
+      { c: "cloud", t: "Vercel and Netlify", p: "Find frontend hosting references.", q: "(\"vercel.app\" OR \"netlify.app\")" },
+      { c: "cloud", t: "CDN asset paths", p: "Find CDN-hosted assets and references.", q: "(inurl:cdn OR inurl:assets OR inurl:static) (cloudfront OR akamai OR fastly OR cdn)" },
+      { c: "cloud", t: "Terraform state references", p: "Find cloud infrastructure state names.", q: "(\"terraform.tfstate\" OR \"tfstate\")" },
+      { c: "cloud", t: "Kubernetes public clues", p: "Find Kubernetes infrastructure terms.", q: "(kubernetes OR k8s OR kubeconfig OR kube-system) (filetype:yaml OR filetype:yml OR filetype:txt)" },
+
+      { c: "errors", t: "Stack traces", p: "Find generic stack trace output.", q: "(\"stack trace\" OR \"Stacktrace\" OR \"Traceback (most recent call last)\")" },
+      { c: "errors", t: "PHP errors", p: "Find PHP warning and fatal error output.", q: "(\"PHP Warning\" OR \"PHP Fatal error\" OR \"Notice: Undefined\" OR \"Parse error\")" },
+      { c: "errors", t: "ASP.NET errors", p: "Find ASP.NET runtime error pages.", q: "(\"Server Error in '/' Application\" OR \"Runtime Error\" \"ASP.NET\")" },
+      { c: "errors", t: "Java errors", p: "Find Java exception output.", q: "(\"java.lang.\" OR \"javax.servlet\" OR \"at org.springframework\" OR \"Whitelabel Error Page\")" },
+      { c: "errors", t: "Python errors", p: "Find Python and Django debug output.", q: "(\"Traceback (most recent call last)\" OR \"Django\" \"DEBUG\" OR \"Werkzeug Debugger\")" },
+      { c: "errors", t: "Node errors", p: "Find Node and Express error output.", q: "(\"Error: ENOENT\" OR \"TypeError:\" OR \"ReferenceError:\" OR \"Express error\")" },
+      { c: "errors", t: "Database errors", p: "Find database error messages.", q: "(\"SQL syntax\" OR \"mysql_fetch\" OR \"ORA-\" OR \"PostgreSQL\" \"ERROR\" OR \"SQLiteException\")" },
+      { c: "errors", t: "Debug mode", p: "Find debug-mode labels.", q: "(\"debug mode\" OR \"debug=true\" OR \"APP_DEBUG\" OR \"development mode\")" },
+      { c: "errors", t: "Laravel debug", p: "Find Laravel debug and exception pages.", q: "(\"Whoops\" \"There was an error\" OR \"Laravel\" \"APP_DEBUG\")" },
+      { c: "errors", t: "Rails errors", p: "Find Rails exception output.", q: "(\"Action Controller: Exception caught\" OR \"ActiveRecord::\" OR \"Ruby on Rails\")" },
+      { c: "errors", t: "Server status", p: "Find status or server-info pages.", q: "(inurl:server-status OR inurl:server-info OR intitle:\"Apache Status\")" },
+      { c: "errors", t: "Verbose logs", p: "Find verbose log text.", q: "(\"DEBUG\" OR \"INFO\" OR \"WARN\" OR \"ERROR\") (filetype:log OR filetype:txt)" },
+
+      { c: "parameters", t: "Redirect parameters", p: "Find URLs with redirect-like parameters.", q: "(inurl:redirect= OR inurl:return= OR inurl:returnUrl= OR inurl:next= OR inurl:url= OR inurl:continue=)" },
+      { c: "parameters", t: "Callback parameters", p: "Find URLs with callback parameters.", q: "(inurl:callback= OR inurl:redirect_uri= OR inurl:callbackUrl= OR inurl:post_logout_redirect_uri=)" },
+      { c: "parameters", t: "File parameters", p: "Find URLs with file/path parameters.", q: "(inurl:file= OR inurl:path= OR inurl:folder= OR inurl:dir= OR inurl:download=)" },
+      { c: "parameters", t: "Document parameters", p: "Find document and attachment fetch URLs.", q: "(inurl:doc= OR inurl:document= OR inurl:attachment= OR inurl:filename=)" },
+      { c: "parameters", t: "ID parameters", p: "Find object identifier parameters.", q: "(inurl:id= OR inurl:user= OR inurl:account= OR inurl:order= OR inurl:invoice=)" },
+      { c: "parameters", t: "Search parameters", p: "Find search and query parameters.", q: "(inurl:q= OR inurl:query= OR inurl:search= OR inurl:keyword=)" },
+      { c: "parameters", t: "Pagination parameters", p: "Find pagination and limit parameters.", q: "(inurl:page= OR inurl:limit= OR inurl:offset= OR inurl:sort=)" },
+      { c: "parameters", t: "Language parameters", p: "Find language and locale parameters.", q: "(inurl:lang= OR inurl:locale= OR inurl:language=)" },
+      { c: "parameters", t: "Preview parameters", p: "Find preview, debug, and mode parameters.", q: "(inurl:preview= OR inurl:debug= OR inurl:test= OR inurl:mode=)" },
+      { c: "parameters", t: "Token parameters", p: "Find token-like URL parameters.", q: "(inurl:token= OR inurl:key= OR inurl:auth= OR inurl:code=)" },
+      { c: "parameters", t: "URL include parameters", p: "Find URL-valued parameters.", q: "(inurl:http OR inurl:https) (inurl:url= OR inurl:uri= OR inurl:target= OR inurl:link=)" },
+      { c: "parameters", t: "Export parameters", p: "Find export and format parameters.", q: "(inurl:export= OR inurl:format= OR inurl:type= OR inurl:download=)" }
+    ];
+
+    const categoryById = new Map(categories.map((category) => [category.id, category]));
+    let activeCategory = "all";
+    let visibleDorks = [];
+    let toastTimer = null;
+
+    const els = {
+      targetInput: document.getElementById("targetInput"),
+      normalizedTarget: document.getElementById("normalizedTarget"),
+      targetState: document.getElementById("targetState"),
+      textFilter: document.getElementById("textFilter"),
+      categoryChips: document.getElementById("categoryChips"),
+      dorkList: document.getElementById("dorkList"),
+      emptyState: document.getElementById("emptyState"),
+      visibleCount: document.getElementById("visibleCount"),
+      totalCount: document.getElementById("totalCount"),
+      activeHeading: document.getElementById("activeHeading"),
+      activeSummary: document.getElementById("activeSummary"),
+      copyVisibleBtn: document.getElementById("copyVisibleBtn"),
+      downloadVisibleBtn: document.getElementById("downloadVisibleBtn"),
+      sortSelect: document.getElementById("sortSelect"),
+      themeToggle: document.getElementById("themeToggle"),
+      themeIcon: document.getElementById("themeIcon"),
+      themeLabel: document.getElementById("themeLabel"),
+      toast: document.getElementById("toast")
+    };
+
+    const sunIcon = `
+      <path d="M12 3v2.2M12 18.8V21M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M3 12h2.2M18.8 12H21M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2"></circle>
+    `;
+    const moonIcon = `
+      <path d="M20.2 14.1A7.6 7.6 0 0 1 9.9 3.8 8.6 8.6 0 1 0 20.2 14.1Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+    `;
+
+    function getSavedTheme() {
+      try {
+        return localStorage.getItem("googleDorkerTheme") || "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function saveTheme(theme) {
+      try {
+        localStorage.setItem("googleDorkerTheme", theme);
+      } catch (error) {
+        return;
+      }
+    }
+
+    function getPreferredTheme() {
+      const saved = getSavedTheme();
+      if (saved === "dark" || saved === "light") {
+        return saved;
+      }
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        return "dark";
+      }
+      return "light";
+    }
+
+    function setTheme(theme, persist = true) {
+      const isDark = theme === "dark";
+      document.documentElement.dataset.theme = isDark ? "dark" : "light";
+      els.themeToggle.setAttribute("aria-pressed", String(isDark));
+      els.themeToggle.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+      els.themeLabel.textContent = isDark ? "Light" : "Dark";
+      els.themeIcon.innerHTML = isDark ? moonIcon : sunIcon;
+      if (persist) {
+        saveTheme(isDark ? "dark" : "light");
+      }
+    }
+
+    function initTheme() {
+      setTheme(getPreferredTheme(), false);
+    }
+
+    function normalizeDomain(raw) {
+      let value = raw.trim();
+      if (!value) {
+        return "";
+      }
+
+      value = value.replace(/^site:/i, "").trim().split(/\s+/)[0];
+      value = value.replace(/^['"]|['"]$/g, "");
+
+      try {
+        const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+        const parsed = new URL(hasScheme ? value : `https://${value}`);
+        let host = parsed.hostname.toLowerCase();
+        host = host.replace(/^\*\./, "").replace(/^\.+/, "").replace(/^www\./, "");
+        if (/^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z0-9-]{2,63}$/i.test(host)) {
+          return host;
+        }
+      } catch (error) {
+        return "";
+      }
+
+      return "";
+    }
+
+    function getTarget() {
+      return normalizeDomain(els.targetInput.value);
+    }
+
+    function applyTargetTemplate(value, target) {
+      return String(value).split("{target}").join(target);
+    }
+
+    function getQuery(dork, target) {
+      const domain = target || "target.tld";
+      const body = applyTargetTemplate(dork.q, domain);
+      if (dork.scope === "raw") {
+        return body;
+      }
+      if (dork.scope === "mention") {
+        return `"${domain}" ${body}`;
+      }
+      return `site:${domain} ${body}`;
+    }
+
+    function getScopeLabel(dork) {
+      if (dork.scope === "raw") {
+        return "Target token";
+      }
+      if (dork.scope === "mention") {
+        return "External mention";
+      }
+      return "Target site";
+    }
+
+    function getGoogleUrl(query) {
+      return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    }
+
+    function getCategoryCounts() {
+      const counts = new Map(categories.map((category) => [category.id, 0]));
+      dorks.forEach((dork) => {
+        counts.set(dork.c, (counts.get(dork.c) || 0) + 1);
+      });
+      return counts;
+    }
+
+    function renderChips() {
+      const counts = getCategoryCounts();
+      const buttons = [
+        `<button class="chip${activeCategory === "all" ? " active" : ""}" type="button" data-category="all">
+          <span>All dorks</span><span class="chip-count">${dorks.length}</span>
+        </button>`,
+        ...categories.map((category) => `
+          <button class="chip${activeCategory === category.id ? " active" : ""}" type="button" data-category="${category.id}">
+            <span>${escapeHtml(category.name)}</span><span class="chip-count">${counts.get(category.id) || 0}</span>
+          </button>
+        `)
+      ];
+      els.categoryChips.innerHTML = buttons.join("");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function sortDorks(items) {
+      const mode = els.sortSelect.value;
+      const copy = [...items];
+      if (mode === "title") {
+        return copy.sort((a, b) => a.t.localeCompare(b.t));
+      }
+      return copy.sort((a, b) => {
+        const categoryA = categories.findIndex((category) => category.id === a.c);
+        const categoryB = categories.findIndex((category) => category.id === b.c);
+        if (categoryA !== categoryB) {
+          return categoryA - categoryB;
+        }
+        return a.t.localeCompare(b.t);
+      });
+    }
+
+    function getFilteredDorks() {
+      const term = els.textFilter.value.trim().toLowerCase();
+      const filtered = dorks.filter((dork) => {
+        const category = categoryById.get(dork.c);
+        const inCategory = activeCategory === "all" || dork.c === activeCategory;
+        const haystack = `${dork.t} ${dork.p} ${dork.q} ${category ? category.name : ""} ${getScopeLabel(dork)}`.toLowerCase();
+        return inCategory && (!term || haystack.includes(term));
+      });
+      return sortDorks(filtered);
+    }
+
+    function updateTargetState() {
+      const target = getTarget();
+      els.normalizedTarget.textContent = target || "target.tld";
+      els.targetState.textContent = target ? target : "No target";
+      els.copyVisibleBtn.disabled = !target || visibleDorks.length === 0;
+      els.downloadVisibleBtn.disabled = !target || visibleDorks.length === 0;
+    }
+
+    function renderDorks() {
+      const target = getTarget();
+      visibleDorks = getFilteredDorks();
+
+      els.visibleCount.textContent = String(visibleDorks.length);
+      els.totalCount.textContent = String(dorks.length);
+
+      const active = categoryById.get(activeCategory);
+      els.activeHeading.textContent = active ? active.name : "All dorks";
+      els.activeSummary.textContent = active ? active.summary : "Practical indexed-content queries for authorized security review.";
+
+      if (visibleDorks.length === 0) {
+        els.dorkList.innerHTML = "";
+        els.emptyState.style.display = "block";
+        updateTargetState();
+        return;
+      }
+
+      els.emptyState.style.display = "none";
+      els.dorkList.innerHTML = visibleDorks.map((dork, index) => {
+        const category = categoryById.get(dork.c);
+        const query = getQuery(dork, target);
+        return `
+          <article class="panel dork-row">
+            <div>
+              <div class="tag-line">
+                <span class="category-tag">${escapeHtml(category ? category.name : dork.c)}</span>
+                <span class="scope-tag">${escapeHtml(getScopeLabel(dork))}</span>
+              </div>
+              <h3 class="dork-title">${escapeHtml(dork.t)}</h3>
+              <p class="dork-purpose">${escapeHtml(dork.p)}</p>
+            </div>
+            <div class="query-box">
+              <code>${escapeHtml(query)}</code>
+            </div>
+            <div class="row-actions">
+              <button class="btn btn-primary btn-small" type="button" data-action="open" data-index="${index}" title="Open this dork in Google">
+                <span aria-hidden="true">↗</span><span>Open</span>
+              </button>
+              <button class="btn btn-secondary btn-small" type="button" data-action="copy" data-index="${index}" title="Copy this query">
+                <span aria-hidden="true">⧉</span><span>Copy</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      updateTargetState();
+    }
+
+    function requireTarget() {
+      const target = getTarget();
+      if (!target) {
+        showToast("Enter a valid target domain first.", true);
+        els.targetInput.focus();
+        return "";
+      }
+      return target;
+    }
+
+    async function copyText(text, message) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.left = "-9999px";
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          document.body.removeChild(area);
+        }
+        showToast(message);
+      } catch (error) {
+        showToast("Copy failed in this browser.", true);
+      }
+    }
+
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function showToast(message, isError = false) {
+      clearTimeout(toastTimer);
+      els.toast.textContent = message;
+      els.toast.classList.toggle("error", isError);
+      els.toast.classList.add("show");
+      toastTimer = setTimeout(() => {
+        els.toast.classList.remove("show");
+      }, 2200);
+    }
+
+    function bindEvents() {
+      els.targetInput.addEventListener("input", renderDorks);
+      els.textFilter.addEventListener("input", renderDorks);
+      els.sortSelect.addEventListener("change", renderDorks);
+      els.themeToggle.addEventListener("click", () => {
+        const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        setTheme(nextTheme);
+      });
+
+      els.categoryChips.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-category]");
+        if (!button) {
+          return;
+        }
+        activeCategory = button.dataset.category;
+        renderChips();
+        renderDorks();
+      });
+
+      els.dorkList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+
+        const target = requireTarget();
+        if (!target) {
+          return;
+        }
+
+        const dork = visibleDorks[Number(button.dataset.index)];
+        if (!dork) {
+          showToast("That dork is no longer visible.", true);
+          return;
+        }
+
+        const query = getQuery(dork, target);
+        if (button.dataset.action === "open") {
+          window.open(getGoogleUrl(query), "_blank", "noopener,noreferrer");
+          showToast("Opened Google search.");
+        } else {
+          copyText(query, "Query copied.");
+        }
+      });
+
+      els.copyVisibleBtn.addEventListener("click", () => {
+        const target = requireTarget();
+        if (!target) {
+          return;
+        }
+        const text = visibleDorks.map((dork) => getQuery(dork, target)).join("\n");
+        copyText(text, `${visibleDorks.length} visible queries copied.`);
+      });
+
+      els.downloadVisibleBtn.addEventListener("click", () => {
+        const target = requireTarget();
+        if (!target) {
+          return;
+        }
+        const text = visibleDorks.map((dork) => getQuery(dork, target)).join("\n");
+        downloadText(`${target}-google-dorks.txt`, `${text}\n`);
+        showToast(`${visibleDorks.length} visible queries downloaded.`);
+      });
+    }
+
+    initTheme();
+    renderChips();
+    bindEvents();
+    renderDorks();
+  </script>
+</body>
+</html>
