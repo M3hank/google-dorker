@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Google Dorker — Authorized Recon Query Launcher</title>
+  <title>Google Dorker - Authorized Recon Query Launcher</title>
   <style>
     :root {
       color-scheme: light;
@@ -1057,14 +1057,17 @@
 
       value = value.replace(/^site:/i, "").trim().split(/\s+/)[0];
       value = value.replace(/^['"]|['"]$/g, "");
+      
+      const hasWildcard = value.startsWith('*');
+      const cleanValue = value.replace(/^\*\.?/, "");
 
       try {
-        const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
-        const parsed = new URL(hasScheme ? value : `https://${value}`);
+        const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(cleanValue);
+        const parsed = new URL(hasScheme ? cleanValue : `https://${cleanValue}`);
         let host = parsed.hostname.toLowerCase();
-        host = host.replace(/^\*\./, "").replace(/^\.+/, "").replace(/^www\./, "");
+        host = host.replace(/^\.+/, "").replace(/^www\./, "");
         if (/^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z0-9-]{2,63}$/i.test(host)) {
-          return host;
+          return hasWildcard ? `*.${host}` : host;
         }
       } catch (error) {
         return "";
