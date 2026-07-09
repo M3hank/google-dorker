@@ -396,6 +396,12 @@
       transform: translateY(-1px);
     }
 
+    .btn-opened {
+      background: var(--muted) !important;
+      color: #ffffff !important;
+      border-color: var(--muted) !important;
+    }
+
     .btn-secondary {
       border-color: var(--line);
       color: var(--ink);
@@ -1210,7 +1216,7 @@
               <code>${escapeHtml(query)}</code>
             </div>
             <div class="row-actions">
-              <button class="btn btn-primary btn-small" type="button" data-action="open" data-index="${index}" title="Open this dork in Google">
+              <button class="btn btn-primary btn-small ${dork.opened ? 'btn-opened' : ''}" type="button" data-action="open" data-index="${index}" title="Open this dork in Google">
                 <span aria-hidden="true">↗</span><span>Open</span>
               </button>
               <button class="btn btn-secondary btn-small" type="button" data-action="copy" data-index="${index}" title="Copy this query">
@@ -1315,7 +1321,10 @@
 
         const query = getQuery(dork, target);
         if (button.dataset.action === "open") {
-          window.open(getGoogleUrl(query), "_blank", "noopener,noreferrer");
+          const newTab = window.open(getGoogleUrl(query), "_blank", "noopener,noreferrer");
+          if (newTab) newTab.focus();
+          dork.opened = true;
+          button.classList.add("btn-opened");
           showToast("Opened Google search.");
         } else {
           copyText(query, "Query copied.");
