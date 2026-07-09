@@ -1321,8 +1321,7 @@
 
         const query = getQuery(dork, target);
         if (button.dataset.action === "open") {
-          const newTab = window.open(getGoogleUrl(query), "_blank", "noopener,noreferrer");
-          if (newTab) newTab.focus();
+          window.open(getGoogleUrl(query), "_blank", "noopener,noreferrer");
           dork.opened = true;
           button.classList.add("btn-opened");
           showToast("Opened Google search.");
