@@ -1567,6 +1567,14 @@
 
     function getSearchUrl(query) {
       const engine = getActiveEngine();
+      if (engine.id === "fofa") {
+        try {
+          const b64 = btoa(unescape(encodeURIComponent(query)));
+          return `https://fofa.info/result?qbase64=${encodeURIComponent(b64)}`;
+        } catch (e) {
+          return `${engine.searchUrl}${encodeURIComponent(query)}`;
+        }
+      }
       return `${engine.searchUrl}${encodeURIComponent(query)}`;
     }
 
