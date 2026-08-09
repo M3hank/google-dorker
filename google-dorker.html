@@ -675,6 +675,104 @@
         width: 100%;
       }
     }
+
+    .engine-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .engine-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      flex: 1 1 0;
+      justify-content: center;
+      min-width: 0;
+      position: relative;
+    }
+
+    .engine-tab:hover {
+      color: var(--ink);
+      background: var(--panel-soft);
+    }
+
+    .engine-tab.active {
+      color: var(--accent-ink);
+      background: var(--accent);
+    }
+
+    .engine-tab .engine-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 800;
+      flex: 0 0 auto;
+      line-height: 1;
+    }
+
+    .engine-tab .engine-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .engine-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 980px) {
+      .engine-tabs {
+        gap: 3px;
+        padding: 4px;
+      }
+
+      .engine-tab {
+        padding: 7px 10px;
+        font-size: 12px;
+        gap: 4px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .engine-tab .engine-name {
+        display: none;
+      }
+
+      .engine-tab .engine-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+      }
+
+      .engine-tab {
+        padding: 6px 4px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -739,6 +837,8 @@
       </aside>
 
       <section class="content">
+        <div id="engineTabs" class="engine-tabs"></div>
+
         <div class="panel toolbar">
           <div class="toolbar-title">
             <h2 id="activeHeading">All dorks</h2>
@@ -978,8 +1078,213 @@
       { c: "parameters", t: "Export parameters", p: "Find export and format parameters.", q: "(inurl:export= OR inurl:format= OR inurl:type= OR inurl:download=)" }
     ];
 
+
+    const engines = [
+      { id: "google", name: "Google", icon: "G", color: "#4285F4", searchUrl: "https://www.google.com/search?q=", siteOp: "site:", operatorMap: {} },
+      { id: "bing", name: "Bing", icon: "B", color: "#00809D", searchUrl: "https://www.bing.com/search?q=", siteOp: "site:", operatorMap: { "intext:": "inbody:" } },
+      { id: "yandex", name: "Yandex", icon: "\u042f", color: "#FF0000", searchUrl: "https://yandex.com/search/?text=", siteOp: "site:", operatorMap: { "filetype:": "mime:", "ext:": "mime:", "intitle:": "title:" } },
+      { id: "duckduckgo", name: "DuckDuckGo", icon: "\ud83e\udd86", color: "#DE5833", searchUrl: "https://duckduckgo.com/?q=", siteOp: "site:", operatorMap: {} },
+      { id: "yahoo", name: "Yahoo", icon: "Y!", color: "#6001D2", searchUrl: "https://search.yahoo.com/search?p=", siteOp: "site:", operatorMap: { "intext:": "inbody:" } },
+      { id: "baidu", name: "Baidu", icon: "\u767e", color: "#2319DC", searchUrl: "https://www.baidu.com/s?wd=", siteOp: "site:", operatorMap: {} },
+      { id: "shodan", name: "Shodan", icon: "\u2b22", color: "#D3232E", searchUrl: "https://www.shodan.io/search?query=", siteOp: "hostname:", operatorMap: { "intitle:": "http.title:", "intext:": "http.html:" }, hasDedicatedDorks: true }
+    ];
+
+
+    const bingCategories = [
+      { id: "bing_high", name: "High Signal", summary: "High-signal Bing queries for quick wins." },
+      { id: "bing_docs", name: "Documents", summary: "PDF, Word, Excel, and text documents indexed on Bing." },
+      { id: "bing_admin", name: "Admin & Auth", summary: "Login, admin panels, and management interfaces." },
+      { id: "bing_config", name: "Configs & Keys", summary: "Exposed configs, credentials, and API keys." },
+      { id: "bing_tech", name: "Tech & APIs", summary: "API docs, Swagger UI, and technology fingerprints." }
+    ];
+
+    const bingDorks = [
+      { c: "bing_high", t: "Exposed environment files", p: "Find .env and configuration files on Bing.", q: "filetype:env OR inbody:DB_PASSWORD" },
+      { c: "bing_high", t: "Backup and SQL dumps", p: "Find database dumps and zip backups.", q: "filetype:sql OR filetype:zip OR filetype:bak" },
+      { c: "bing_high", t: "Directory listings", p: "Find index listings on Bing.", q: "intitle:'index of'" },
+      { c: "bing_high", t: "Swagger API UI", p: "Find Swagger documentation interfaces.", q: "intitle:'Swagger UI' OR inbody:swagger" },
+      { c: "bing_high", t: "Exposed log files", p: "Find plain text and log files with credentials.", q: "filetype:log OR filetype:txt inbody:password" },
+      { c: "bing_docs", t: "PDF documents", p: "Find indexed PDF files.", q: "filetype:pdf" },
+      { c: "bing_docs", t: "Office spreadsheets", p: "Excel and CSV spreadsheet exports.", q: "filetype:xlsx OR filetype:xls OR filetype:csv" },
+      { c: "bing_docs", t: "Word documents", p: "Word document files.", q: "filetype:docx OR filetype:doc" },
+      { c: "bing_docs", t: "Confidential files", p: "Files containing confidentiality notices.", q: "filetype:pdf inbody:confidential" },
+      { c: "bing_admin", t: "Admin portals", p: "Find admin login pages.", q: "intitle:admin OR intitle:login" },
+      { c: "bing_admin", t: "Dashboard panels", p: "Find web dashboard interfaces.", q: "intitle:dashboard OR intitle:console" },
+      { c: "bing_admin", t: "Staging environments", p: "Find test and staging subdomains or paths.", q: "intitle:staging OR intitle:dev" },
+      { c: "bing_config", t: "Config files", p: "Generic configuration files.", q: "filetype:conf OR filetype:config OR filetype:json" },
+      { c: "bing_config", t: "API Keys in body", p: "Find pages indexed by Bing containing API key terms.", q: "inbody:api_key OR inbody:apikey OR inbody:secret" },
+      { c: "bing_config", t: "RSA private keys", p: "Find exposed key files.", q: "filetype:key OR inbody:'BEGIN PRIVATE KEY'" },
+      { c: "bing_tech", t: "GraphQL endpoints", p: "Find GraphQL web consoles.", q: "intitle:GraphiQL OR inbody:graphql" },
+      { c: "bing_tech", t: "Spring Boot actuators", p: "Find Spring actuator endpoints.", q: "inbody:actuator OR inbody:'process_cpu_seconds'" },
+      { c: "bing_tech", t: "Kibana & Grafana", p: "Find monitoring web dashboards.", q: "intitle:Kibana OR intitle:Grafana" }
+    ];
+
+    const yandexCategories = [
+      { id: "yandex_high", name: "High Signal", summary: "High-signal Yandex queries using native Yandex operators." },
+      { id: "yandex_files", name: "Files & Documents", summary: "Indexed documents using Yandex mime: operator." },
+      { id: "yandex_admin", name: "Admin & Panels", summary: "Login portals and directory indexes." },
+      { id: "yandex_secrets", name: "Secrets & Logs", summary: "Credentials, key files, and logs indexed on Yandex." }
+    ];
+
+    const yandexDorks = [
+      { c: "yandex_high", t: "Database dumps (mime:sql)", p: "Find SQL database dumps using Yandex mime operator.", q: "mime:sql" },
+      { c: "yandex_high", t: "Archive backups (mime:zip/tar)", p: "Find backup archives indexed by Yandex.", q: "mime:zip OR mime:tar OR mime:gz" },
+      { c: "yandex_high", t: "Directory listings (title:index)", p: "Find browsable directory indexes.", q: "title:'index of'" },
+      { c: "yandex_high", t: "Exposed PDF docs", p: "Find target PDF documents.", q: "mime:pdf" },
+      { c: "yandex_high", t: "Exposed spreadsheets", p: "Find Excel spreadsheets.", q: "mime:xlsx OR mime:xls OR mime:csv" },
+      { c: "yandex_files", t: "Word documents", p: "Find Word documents.", q: "mime:doc OR mime:docx" },
+      { c: "yandex_files", t: "PowerPoint presentations", p: "Find slides and presentations.", q: "mime:ppt OR mime:pptx" },
+      { c: "yandex_files", t: "Text files", p: "Find raw text files.", q: "mime:txt" },
+      { c: "yandex_admin", t: "Admin login pages", p: "Find admin panels via page titles.", q: "title:admin OR title:login" },
+      { c: "yandex_admin", t: "Control dashboards", p: "Find dashboard surfaces.", q: "title:dashboard OR title:console" },
+      { c: "yandex_admin", t: "Bitrix / CMS admin", p: "Find CMS admin panels.", q: "title:bitrix OR title:wordpress" },
+      { c: "yandex_secrets", t: "Environment files", p: "Find .env and configuration files.", q: "mime:env OR 'DB_PASSWORD'" },
+      { c: "yandex_secrets", t: "Log files", p: "Find log files containing credentials.", q: "mime:log OR 'password='" },
+      { c: "yandex_secrets", t: "API Key terms", p: "Find pages mentioning API keys and tokens.", q: "'api_key' OR 'access_token' OR 'secret_key'" }
+    ];
+
+    const ddgCategories = [
+      { id: "ddg_high", name: "High Signal", summary: "Clean DuckDuckGo queries using supported operators." },
+      { id: "ddg_files", name: "Document Search", summary: "Targeted filetype dorks for DuckDuckGo." },
+      { id: "ddg_recon", name: "Content Recon", summary: "Keyword phrase searches on DuckDuckGo." }
+    ];
+
+    const ddgDorks = [
+      { c: "ddg_high", t: "PDF Document search", p: "Find indexed PDF files on target domain.", q: "filetype:pdf" },
+      { c: "ddg_high", t: "Excel spreadsheets", p: "Find indexed Excel files.", q: "filetype:xlsx OR filetype:xls" },
+      { c: "ddg_high", t: "CSV exports", p: "Find CSV data exports.", q: "filetype:csv" },
+      { c: "ddg_high", t: "SQL database files", p: "Find SQL files indexed by DDG.", q: "filetype:sql" },
+      { c: "ddg_high", t: "Text and log files", p: "Find text and log files.", q: "filetype:txt OR filetype:log" },
+      { c: "ddg_files", t: "Word documents", p: "Find Word documents.", q: "filetype:docx OR filetype:doc" },
+      { c: "ddg_files", t: "JSON data files", p: "Find JSON configuration files.", q: "filetype:json" },
+      { c: "ddg_files", t: "ZIP archives", p: "Find ZIP archives.", q: "filetype:zip" },
+      { c: "ddg_recon", t: "Directory listings", p: "Search for index listing phrases.", q: "'index of'" },
+      { c: "ddg_recon", t: "Admin & Login keywords", p: "Find pages with admin terms.", q: "'admin' OR 'login'" },
+      { c: "ddg_recon", t: "Swagger & OpenAPI", p: "Find API documentation.", q: "'swagger' OR 'openapi'" },
+      { c: "ddg_recon", t: "Password and secret mentions", p: "Find pages mentioning credentials.", q: "'password' OR 'api_key'" }
+    ];
+
+    const yahooCategories = [
+      { id: "yahoo_high", name: "High Signal", summary: "High-signal Yahoo search dorks." },
+      { id: "yahoo_docs", name: "Documents", summary: "Indexed documents on Yahoo." },
+      { id: "yahoo_admin", name: "Admin Panels", summary: "Login and admin surfaces." }
+    ];
+
+    const yahooDorks = [
+      { c: "yahoo_high", t: "PDF Documents", p: "Find PDF files indexed by Yahoo.", q: "filetype:pdf" },
+      { c: "yahoo_high", t: "Excel Spreadsheets", p: "Find Excel files.", q: "filetype:xlsx OR filetype:xls" },
+      { c: "yahoo_high", t: "SQL dumps", p: "Find SQL backup files.", q: "filetype:sql" },
+      { c: "yahoo_high", t: "Directory Listings", p: "Find directory index pages.", q: "intitle:'index of'" },
+      { c: "yahoo_docs", t: "Word Documents", p: "Find Word files.", q: "filetype:docx OR filetype:doc" },
+      { c: "yahoo_docs", t: "CSV Exports", p: "Find CSV data files.", q: "filetype:csv" },
+      { c: "yahoo_admin", t: "Admin login pages", p: "Find admin portals.", q: "intitle:admin OR intitle:login" },
+      { c: "yahoo_admin", t: "Dashboard panels", p: "Find control consoles.", q: "intitle:dashboard" }
+    ];
+
+    const baiduCategories = [
+      { id: "baidu_high", name: "High Signal", summary: "Baidu queries for global & Chinese tech stack recon." },
+      { id: "baidu_admin", name: "Admin & System (后台/系统)", summary: "Admin panels, login portals, and management systems." },
+      { id: "baidu_files", name: "Files & Documents", summary: "Indexed PDF, Excel, and SQL files on Baidu." },
+      { id: "baidu_api", name: "APIs & Tech", summary: "API surfaces and technical documentation." }
+    ];
+
+    const baiduDorks = [
+      { c: "baidu_high", t: "Admin Panel (intitle:后台)", p: "Find Chinese & global admin backend panels.", q: "intitle:后台 OR intitle:admin" },
+      { c: "baidu_high", t: "Login Portal (intitle:登录)", p: "Find login portals and sign-in pages.", q: "intitle:登录 OR intitle:login" },
+      { c: "baidu_high", t: "Management System (intitle:系统)", p: "Find internal management platforms.", q: "intitle:系统 OR inurl:manage" },
+      { c: "baidu_high", t: "Directory Listing", p: "Find browsable directory indexes.", q: "intitle:'index of'" },
+      { c: "baidu_files", t: "PDF Documents", p: "Find indexed PDF files.", q: "filetype:pdf" },
+      { c: "baidu_files", t: "Spreadsheets (XLS/XLSX)", p: "Find Excel spreadsheets.", q: "filetype:xlsx OR filetype:xls" },
+      { c: "baidu_files", t: "SQL Database Dumps", p: "Find SQL backup files.", q: "filetype:sql" },
+      { c: "baidu_files", t: "Word Documents", p: "Find Word document files.", q: "filetype:docx OR filetype:doc" },
+      { c: "baidu_api", t: "API Documentation", p: "Find API documentation pages.", q: "inurl:api OR intitle:API" },
+      { c: "baidu_api", t: "Swagger & OpenAPI", p: "Find Swagger UI pages.", q: "inurl:swagger OR intitle:Swagger" },
+      { c: "baidu_api", t: "Config & Secrets", p: "Find configuration files.", q: "filetype:json OR filetype:xml" }
+    ];
+
+    const bingCategoryById = new Map(bingCategories.map((c) => [c.id, c]));
+    const yandexCategoryById = new Map(yandexCategories.map((c) => [c.id, c]));
+    const ddgCategoryById = new Map(ddgCategories.map((c) => [c.id, c]));
+    const yahooCategoryById = new Map(yahooCategories.map((c) => [c.id, c]));
+    const baiduCategoryById = new Map(baiduCategories.map((c) => [c.id, c]));
+
+    const shodanCategories = [
+      { id: "shodan_services", name: "Exposed Services", summary: "Open databases, caches, message queues, and data stores accessible from the internet." },
+      { id: "shodan_admin", name: "Admin Panels", summary: "Exposed management consoles, dashboards, and admin interfaces." },
+      { id: "shodan_infra", name: "Infrastructure", summary: "Docker APIs, container registries, orchestration tools, and cloud infrastructure." },
+      { id: "shodan_web", name: "Web Services", summary: "HTTP services, SSL certificates, default pages, and API documentation surfaces." },
+      { id: "shodan_vulns", name: "Vulnerable Versions", summary: "Known vulnerable software versions and CVE-affected products." },
+      { id: "shodan_network", name: "Network Services", summary: "FTP, SSH, Telnet, SNMP, and other exposed network services." }
+    ];
+
+    const shodanDorks = [
+      { c: "shodan_services", t: "MongoDB instances", p: "Find exposed MongoDB databases without authentication.", q: "port:27017 product:\"MongoDB\"" },
+      { c: "shodan_services", t: "Elasticsearch clusters", p: "Find exposed Elasticsearch instances with open APIs.", q: "port:9200 product:\"ElasticSearch\"" },
+      { c: "shodan_services", t: "Redis servers", p: "Find exposed Redis cache servers without auth.", q: "port:6379 product:\"Redis\"" },
+      { c: "shodan_services", t: "MySQL databases", p: "Find exposed MySQL database servers.", q: "port:3306 product:\"MySQL\"" },
+      { c: "shodan_services", t: "PostgreSQL databases", p: "Find exposed PostgreSQL database servers.", q: "port:5432 product:\"PostgreSQL\"" },
+      { c: "shodan_services", t: "Memcached servers", p: "Find exposed Memcached instances (amplification risk).", q: "port:11211 product:\"Memcached\"" },
+      { c: "shodan_services", t: "CouchDB instances", p: "Find exposed CouchDB databases.", q: "port:5984 product:\"CouchDB\"" },
+      { c: "shodan_services", t: "Cassandra instances", p: "Find exposed Apache Cassandra databases.", q: "port:9042 product:\"Cassandra\"" },
+      { c: "shodan_services", t: "RabbitMQ management", p: "Find exposed RabbitMQ management consoles.", q: "port:15672 http.title:\"RabbitMQ\"" },
+
+      { c: "shodan_admin", t: "Jenkins dashboards", p: "Find exposed Jenkins CI/CD panels.", q: "http.title:\"Dashboard [Jenkins]\"" },
+      { c: "shodan_admin", t: "Grafana dashboards", p: "Find exposed Grafana monitoring panels.", q: "http.title:\"Grafana\"" },
+      { c: "shodan_admin", t: "Kibana dashboards", p: "Find exposed Kibana analytics panels.", q: "http.title:\"Kibana\"" },
+      { c: "shodan_admin", t: "phpMyAdmin panels", p: "Find exposed phpMyAdmin database admin panels.", q: "http.title:\"phpMyAdmin\"" },
+      { c: "shodan_admin", t: "Webmin panels", p: "Find exposed Webmin server administration panels.", q: "http.title:\"Webmin\"" },
+      { c: "shodan_admin", t: "Kubernetes dashboard", p: "Find exposed Kubernetes web dashboards.", q: "http.title:\"Kubernetes Dashboard\"" },
+      { c: "shodan_admin", t: "Prometheus metrics", p: "Find exposed Prometheus metric endpoints.", q: "http.title:\"Prometheus\" port:9090" },
+      { c: "shodan_admin", t: "Portainer panels", p: "Find exposed Portainer Docker management UIs.", q: "http.title:\"Portainer\"" },
+      { c: "shodan_admin", t: "Adminer panels", p: "Find exposed Adminer database management.", q: "http.title:\"Adminer\"" },
+      { c: "shodan_admin", t: "Traefik dashboard", p: "Find exposed Traefik reverse proxy dashboards.", q: "http.title:\"Traefik\"" },
+      { c: "shodan_admin", t: "MinIO console", p: "Find exposed MinIO object storage consoles.", q: "http.title:\"MinIO\"" },
+
+      { c: "shodan_infra", t: "Docker API exposed", p: "Find exposed Docker daemon APIs (remote code execution risk).", q: "port:2375 product:\"Docker\"" },
+      { c: "shodan_infra", t: "Docker Registry", p: "Find exposed Docker container registries.", q: "port:5000 \"Docker-Distribution-Api-Version\"" },
+      { c: "shodan_infra", t: "etcd exposed", p: "Find exposed etcd key-value stores (secrets risk).", q: "port:2379 product:\"etcd\"" },
+      { c: "shodan_infra", t: "Consul exposed", p: "Find exposed HashiCorp Consul service mesh.", q: "port:8500 http.title:\"Consul\"" },
+      { c: "shodan_infra", t: "Vault exposed", p: "Find exposed HashiCorp Vault secrets management.", q: "http.title:\"Vault\" port:8200" },
+      { c: "shodan_infra", t: "Kubernetes API", p: "Find exposed Kubernetes API servers.", q: "port:6443 \"kube-apiserver\"" },
+      { c: "shodan_infra", t: "Hadoop YARN", p: "Find exposed Hadoop YARN resource managers.", q: "http.title:\"All Applications\" port:8088" },
+      { c: "shodan_infra", t: "Zookeeper exposed", p: "Find exposed Apache Zookeeper instances.", q: "port:2181 product:\"Zookeeper\"" },
+
+      { c: "shodan_web", t: "SSL certificate search", p: "Find all services using SSL certificates matching the target domain.", q: "ssl.cert.subject.CN:\"{target}\"", scope: "raw" },
+      { c: "shodan_web", t: "SSL organization search", p: "Find services by SSL certificate organization name.", q: "ssl.cert.subject.O:\"{target}\"", scope: "raw" },
+      { c: "shodan_web", t: "Default Apache pages", p: "Find default Apache installation pages.", q: "http.title:\"Apache2 Ubuntu Default Page\"" },
+      { c: "shodan_web", t: "Default Nginx pages", p: "Find default Nginx installation pages.", q: "http.title:\"Welcome to nginx\"" },
+      { c: "shodan_web", t: "Default IIS pages", p: "Find default IIS installation pages.", q: "http.title:\"IIS Windows Server\"" },
+      { c: "shodan_web", t: "Swagger UI exposed", p: "Find exposed Swagger API documentation pages.", q: "http.title:\"Swagger UI\"" },
+      { c: "shodan_web", t: "GraphQL endpoints", p: "Find exposed GraphQL consoles.", q: "http.title:\"GraphiQL\" OR http.title:\"GraphQL Playground\"" },
+      { c: "shodan_web", t: "HTTP 401 pages", p: "Find services returning 401 Unauthorized (auth bypass potential).", q: "http.status:401" },
+      { c: "shodan_web", t: "HTTP 403 pages", p: "Find services returning 403 Forbidden (access control bypass potential).", q: "http.status:403" },
+      { c: "shodan_web", t: "Directory listings", p: "Find servers with directory listing enabled.", q: "http.title:\"Index of /\"" },
+
+      { c: "shodan_vulns", t: "Apache 2.4.49 (Path Traversal)", p: "CVE-2021-41773 \u2014 Apache path traversal and RCE.", q: "product:\"Apache\" version:\"2.4.49\"" },
+      { c: "shodan_vulns", t: "Apache 2.4.50 (Path Traversal)", p: "CVE-2021-42013 \u2014 Apache path traversal bypass.", q: "product:\"Apache\" version:\"2.4.50\"" },
+      { c: "shodan_vulns", t: "VMware vCenter", p: "Find exposed VMware vCenter management interfaces.", q: "http.title:\"VMware vCenter\"" },
+      { c: "shodan_vulns", t: "Fortinet FortiGate", p: "Find exposed FortiGate firewall interfaces.", q: "http.title:\"FortiGate\"" },
+      { c: "shodan_vulns", t: "SonicWall VPN", p: "Find exposed SonicWall VPN portals.", q: "http.title:\"SonicWall\"" },
+      { c: "shodan_vulns", t: "Citrix ADC/Gateway", p: "Find exposed Citrix ADC (NetScaler) interfaces.", q: "http.title:\"Citrix\"" },
+      { c: "shodan_vulns", t: "Pulse Secure VPN", p: "Find exposed Pulse Secure VPN gateways.", q: "http.html:\"Pulse Secure\"" },
+      { c: "shodan_vulns", t: "Exchange OWA", p: "Find exposed Microsoft Exchange Outlook Web Access.", q: "http.title:\"Outlook Web App\"" },
+      { c: "shodan_vulns", t: "ProxyShell targets", p: "Find Exchange servers potentially vulnerable to ProxyShell.", q: "http.html:\"Microsoft Exchange\" port:443" },
+
+      { c: "shodan_network", t: "FTP anonymous login", p: "Find FTP servers allowing anonymous access.", q: "port:21 \"Anonymous access granted\"" },
+      { c: "shodan_network", t: "Telnet services", p: "Find exposed Telnet services (plaintext credentials).", q: "port:23 \"login:\"" },
+      { c: "shodan_network", t: "SSH servers", p: "Find SSH servers and identify versions.", q: "port:22 product:\"OpenSSH\"" },
+      { c: "shodan_network", t: "SNMP public community", p: "Find SNMP services with public community string.", q: "port:161 \"public\"" },
+      { c: "shodan_network", t: "SMB services", p: "Find exposed SMB/CIFS file shares.", q: "port:445 \"SMB\"" },
+      { c: "shodan_network", t: "RDP exposed", p: "Find exposed Remote Desktop Protocol services.", q: "port:3389 \"Remote Desktop\"" },
+      { c: "shodan_network", t: "VNC exposed", p: "Find exposed VNC remote desktop services.", q: "port:5900 product:\"VNC\"" },
+      { c: "shodan_network", t: "RTSP cameras", p: "Find exposed RTSP camera streams.", q: "port:554 \"RTSP\"" }
+    ];
+
+    const shodanCategoryById = new Map(shodanCategories.map((c) => [c.id, c]));
+
     const categoryById = new Map(categories.map((category) => [category.id, category]));
     let activeCategory = "all";
+    let activeEngine = "google";
     let visibleDorks = [];
     let toastTimer = null;
 
@@ -1001,7 +1306,8 @@
       themeToggle: document.getElementById("themeToggle"),
       themeIcon: document.getElementById("themeIcon"),
       themeLabel: document.getElementById("themeLabel"),
-      toast: document.getElementById("toast")
+      toast: document.getElementById("toast"),
+      engineTabs: document.getElementById("engineTabs")
     };
 
     const sunIcon = `
@@ -1087,35 +1393,100 @@
       return String(value).split("{target}").join(target);
     }
 
+    function getActiveEngine() {
+      return engines.find(e => e.id === activeEngine) || engines[0];
+    }
+
+    function getActiveDorks() {
+      switch (activeEngine) {
+        case "bing": return bingDorks;
+        case "yandex": return yandexDorks;
+        case "duckduckgo": return ddgDorks;
+        case "yahoo": return yahooDorks;
+        case "baidu": return baiduDorks;
+        case "shodan": return shodanDorks;
+        default: return dorks;
+      }
+    }
+
+    function getActiveCategories() {
+      switch (activeEngine) {
+        case "bing": return bingCategories;
+        case "yandex": return yandexCategories;
+        case "duckduckgo": return ddgCategories;
+        case "yahoo": return yahooCategories;
+        case "baidu": return baiduCategories;
+        case "shodan": return shodanCategories;
+        default: return categories;
+      }
+    }
+
+    function getCategoryMap() {
+      switch (activeEngine) {
+        case "bing": return bingCategoryById;
+        case "yandex": return yandexCategoryById;
+        case "duckduckgo": return ddgCategoryById;
+        case "yahoo": return yahooCategoryById;
+        case "baidu": return baiduCategoryById;
+        case "shodan": return shodanCategoryById;
+        default: return categoryById;
+      }
+    }
+
+    function translateOperators(query, engine) {
+      if (!engine.operatorMap || Object.keys(engine.operatorMap).length === 0) return query;
+      let result = query;
+      for (const [from, to] of Object.entries(engine.operatorMap)) {
+        result = result.split(from).join(to);
+      }
+      return result;
+    }
+
+    function renderEngineTabs() {
+      els.engineTabs.innerHTML = engines.map(e => `
+        <button class="engine-tab${activeEngine === e.id ? ' active' : ''}" type="button" data-engine="${e.id}" title="${escapeHtml(e.name)}">
+          <span class="engine-icon" style="${activeEngine === e.id ? '' : 'color:' + e.color}">${e.icon}</span>
+          <span class="engine-name">${escapeHtml(e.name)}</span>
+        </button>
+      `).join("");
+    }
+
     function getQuery(dork, target) {
+      const engine = getActiveEngine();
       const domain = target || "target.tld";
       const body = applyTargetTemplate(dork.q, domain);
+      let query;
       if (dork.scope === "raw") {
-        return body;
+        query = body;
+      } else if (dork.scope === "mention") {
+        query = engine.id === "shodan" ? `hostname:${domain} ${body}` : `"${domain}" ${body}`;
+      } else {
+        query = `${engine.siteOp}${domain} ${body}`;
       }
-      if (dork.scope === "mention") {
-        return `"${domain}" ${body}`;
-      }
-      return `site:${domain} ${body}`;
+      return translateOperators(query, engine);
     }
 
     function getScopeLabel(dork) {
+      const engine = getActiveEngine();
       if (dork.scope === "raw") {
         return "Target token";
       }
       if (dork.scope === "mention") {
-        return "External mention";
+        return engine.id === "shodan" ? "Hostname filter" : "External mention";
       }
-      return "Target site";
+      return engine.id === "shodan" ? "Hostname filter" : "Target site";
     }
 
-    function getGoogleUrl(query) {
-      return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    function getSearchUrl(query) {
+      const engine = getActiveEngine();
+      return `${engine.searchUrl}${encodeURIComponent(query)}`;
     }
 
     function getCategoryCounts() {
-      const counts = new Map(categories.map((category) => [category.id, 0]));
-      dorks.forEach((dork) => {
+      const cats = getActiveCategories();
+      const activeDorks = getActiveDorks();
+      const counts = new Map(cats.map((category) => [category.id, 0]));
+      activeDorks.forEach((dork) => {
         counts.set(dork.c, (counts.get(dork.c) || 0) + 1);
       });
       return counts;
@@ -1123,11 +1494,13 @@
 
     function renderChips() {
       const counts = getCategoryCounts();
+      const cats = getActiveCategories();
+      const activeDorks = getActiveDorks();
       const buttons = [
         `<button class="chip${activeCategory === "all" ? " active" : ""}" type="button" data-category="all">
-          <span>All dorks</span><span class="chip-count">${dorks.length}</span>
+          <span>All dorks</span><span class="chip-count">${activeDorks.length}</span>
         </button>`,
-        ...categories.map((category) => `
+        ...cats.map((category) => `
           <button class="chip${activeCategory === category.id ? " active" : ""}" type="button" data-category="${category.id}">
             <span>${escapeHtml(category.name)}</span><span class="chip-count">${counts.get(category.id) || 0}</span>
           </button>
@@ -1152,8 +1525,9 @@
         return copy.sort((a, b) => a.t.localeCompare(b.t));
       }
       return copy.sort((a, b) => {
-        const categoryA = categories.findIndex((category) => category.id === a.c);
-        const categoryB = categories.findIndex((category) => category.id === b.c);
+        const cats = getActiveCategories();
+        const categoryA = cats.findIndex((category) => category.id === a.c);
+        const categoryB = cats.findIndex((category) => category.id === b.c);
         if (categoryA !== categoryB) {
           return categoryA - categoryB;
         }
@@ -1163,8 +1537,10 @@
 
     function getFilteredDorks() {
       const term = els.textFilter.value.trim().toLowerCase();
-      const filtered = dorks.filter((dork) => {
-        const category = categoryById.get(dork.c);
+      const catMap = getCategoryMap();
+      const activeDorks = getActiveDorks();
+      const filtered = activeDorks.filter((dork) => {
+        const category = catMap.get(dork.c);
         const inCategory = activeCategory === "all" || dork.c === activeCategory;
         const haystack = `${dork.t} ${dork.p} ${dork.q} ${category ? category.name : ""} ${getScopeLabel(dork)}`.toLowerCase();
         return inCategory && (!term || haystack.includes(term));
@@ -1182,12 +1558,14 @@
 
     function renderDorks() {
       const target = getTarget();
+      const engine = getActiveEngine();
+      const catMap = getCategoryMap();
       visibleDorks = getFilteredDorks();
 
       els.visibleCount.textContent = String(visibleDorks.length);
-      els.totalCount.textContent = String(dorks.length);
+      els.totalCount.textContent = String(getActiveDorks().length);
 
-      const active = categoryById.get(activeCategory);
+      const active = catMap.get(activeCategory);
       els.activeHeading.textContent = active ? active.name : "All dorks";
       els.activeSummary.textContent = active ? active.summary : "Practical indexed-content queries for authorized security review.";
 
@@ -1200,7 +1578,7 @@
 
       els.emptyState.style.display = "none";
       els.dorkList.innerHTML = visibleDorks.map((dork, index) => {
-        const category = categoryById.get(dork.c);
+        const category = catMap.get(dork.c);
         const query = getQuery(dork, target);
         return `
           <article class="panel dork-row">
@@ -1216,7 +1594,7 @@
               <code>${escapeHtml(query)}</code>
             </div>
             <div class="row-actions">
-              <button class="btn btn-primary btn-small ${dork.opened ? 'btn-opened' : ''}" type="button" data-action="open" data-index="${index}" title="Open this dork in Google">
+              <button class="btn btn-primary btn-small ${dork.opened ? 'btn-opened' : ''}" type="button" data-action="open" data-index="${index}" title="Open in ${escapeHtml(engine.name)}">
                 <span aria-hidden="true">↗</span><span>Open</span>
               </button>
               <button class="btn btn-secondary btn-small" type="button" data-action="copy" data-index="${index}" title="Copy this query">
@@ -1292,6 +1670,16 @@
         setTheme(nextTheme);
       });
 
+      els.engineTabs.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-engine]");
+        if (!button) return;
+        activeEngine = button.dataset.engine;
+        activeCategory = "all";
+        renderEngineTabs();
+        renderChips();
+        renderDorks();
+      });
+
       els.categoryChips.addEventListener("click", (event) => {
         const button = event.target.closest("button[data-category]");
         if (!button) {
@@ -1321,10 +1709,10 @@
 
         const query = getQuery(dork, target);
         if (button.dataset.action === "open") {
-          window.open(getGoogleUrl(query), "_blank", "noopener,noreferrer");
+          window.open(getSearchUrl(query), "_blank", "noopener,noreferrer");
           dork.opened = true;
           button.classList.add("btn-opened");
-          showToast("Opened Google search.");
+          showToast(`Opened ${getActiveEngine().name} search.`);
         } else {
           copyText(query, "Query copied.");
         }
@@ -1345,12 +1733,13 @@
           return;
         }
         const text = visibleDorks.map((dork) => getQuery(dork, target)).join("\n");
-        downloadText(`${target}-google-dorks.txt`, `${text}\n`);
+        downloadText(`${target}-${getActiveEngine().id}-dorks.txt`, `${text}\n`);
         showToast(`${visibleDorks.length} visible queries downloaded.`);
       });
     }
 
     initTheme();
+    renderEngineTabs();
     renderChips();
     bindEvents();
     renderDorks();
